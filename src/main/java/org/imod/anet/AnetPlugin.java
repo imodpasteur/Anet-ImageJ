@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import java.nio.channels.Channels;
@@ -72,6 +73,8 @@ public class AnetPlugin implements PlugIn {
 	// image property members
 	private int width;
 	private int height;
+	private static final int BUFFER_SIZE = 4096;
+	private boolean cancel_flag = false;
 
 	// plugin parameters
 	public int input_size;
@@ -152,7 +155,7 @@ public class AnetPlugin implements PlugIn {
 		model_name = gd.getNextRadioButton();
 		if(!model_name.equals("no model available.")){
 			Prefs.set("ANET.default_model", model_name);
-			IJ.log("selected model:" + model_name);
+			IJ.showStatus("selected model:" + model_name);
 		}
 		if(start)
 			return showModelDialog(model_name);
@@ -165,7 +168,7 @@ public class AnetPlugin implements PlugIn {
 		File fm = new File(model_path+"/tensorflow_model.pb");
 		File fc = new File(model_path+"/config.json");
 		if(fm.exists() && !fm.isDirectory() && fc.exists() && !fc.isDirectory()) {
-				IJ.log("loading model from "+model_path);
+				IJ.showStatus("loading model from "+model_path);
 				ap.loadModel(model_path);
 		}
 		else{
@@ -186,7 +189,7 @@ public class AnetPlugin implements PlugIn {
 			image_window_map = new HashMap<String, ImagePlus>();
 			for (int i=0; i<list.length; i++) {
 				ImagePlus imp = WindowManager.getImage(list[i]);
-				image_window_titles[i] = Integer.toString(i)+". "+imp.getTitle();
+				image_window_titles[i] = imp.getTitle();
 				image_window_map.put(image_window_titles[i], imp);
 			}
 		}
@@ -220,7 +223,7 @@ public class AnetPlugin implements PlugIn {
       if (listOfFiles[i].isFile()) {
 
       } else if (listOfFiles[i].isDirectory()) {
-				IJ.log(listOfFiles[i].getName());
+				IJ.showStatus(listOfFiles[i].getName());
 				modelList.add(listOfFiles[i].getName());
       }
     }
@@ -271,12 +274,12 @@ public class AnetPlugin implements PlugIn {
 		model_name = gd.getNextRadioButton();
 		mode = gd.getNextChoice();//gd.getNextString();
 		input_size = (int) gd.getNextNumber();
-		IJ.log("using model " + model_name);
-		IJ.log("using mode " + mode);
+		IJ.showStatus("using model " + model_name);
+		IJ.showStatus("using mode " + mode);
 		model_path = Paths.get(IJ.getDirectory("imagej"), "models/" + model_name).toString();
 		File f = new File(model_path+"/tensorflow_model.pb");
 		if(f.exists() && !f.isDirectory()) {
-				IJ.log(model_path);
+				IJ.showStatus(model_path);
 				// modelPath = "/Users/weiouyang/workspace/tensorflow-java/A-NET-npc-tubulin-946b/";
 				ap.loadModel(model_path);
 				return true; //
@@ -292,14 +295,16 @@ public class AnetPlugin implements PlugIn {
 
 	private boolean showDownloadDialog(List<String> models) {
 		GenericDialog gd = new GenericDialog("A-net model download");
-
+		cancel_flag = false;
 
 		for (String model_name : models) {
 			 gd.addCheckbox(model_name, false);
 		}
 		gd.showDialog();
-		if (gd.wasCanceled())
+		if (gd.wasCanceled()){
+			cancel_flag = true;
 			return false;
+		}
 
 		String selected_models_str = "";
 		for (String model_name : models) {
@@ -308,17 +313,17 @@ public class AnetPlugin implements PlugIn {
 		}
 		List<String> selected_model_names = Arrays.asList(selected_models_str.split(","));
 		for(String model_name: selected_model_names){
-			IJ.log("download " + model_name);
+			IJ.showStatus("download " + model_name);
 			// here we CALL every second
 			CompletableFuture<CallResult> fGet = session.call("org.imod.public.models.get_download_url", model_name);
 			fGet.whenComplete((callResultGet, throwableGet) -> {
-					if (throwableGet == null) {
-							IJ.log(String.format("model url: %s, ", callResultGet.results.get(0)));
+					if (throwableGet == null && !cancel_flag) {
+							IJ.showStatus(String.format("model url: %s, ", callResultGet.results.get(0)));
 							Map model_dict = (Map) callResultGet.results.get(0);
 							String model_url = (String) model_dict.get("url");
 
 
-							IJ.log("dowloading model from: " + model_url);
+							IJ.showStatus("dowloading model from: " + model_url);
 							String fileRoot = Paths.get(IJ.getDirectory("imagej"), "models", model_name).toString();
 							try {
 									// returns pathnames for files and directory
@@ -340,14 +345,13 @@ public class AnetPlugin implements PlugIn {
 									}
 									// save model file
 									saveFile(model_url, model_path_str);
-
-									IJ.log("model and config has been saved to " + fileRoot);
+									IJ.showStatus("model and config has been saved to " + fileRoot);
 							}
 							catch (IOException e2) {
 								 e2.printStackTrace();
 							}
 					} else {
-							IJ.log(String.format("ERROR - call failed: %s", throwableGet.getMessage()));
+							IJ.showStatus(String.format("ERROR - call failed: %s", throwableGet.getMessage()));
 					}
 			});
 		}
@@ -393,22 +397,22 @@ public class AnetPlugin implements PlugIn {
 						}
 						else if(s == 3){
 							float[][][] _output = (float[][][]) outputs.get(key);
-							IJ.log(String.format("%s (%s), float[][][] output(not implemented yet)", model_label, key));
+							IJ.showStatus(String.format("%s (%s), float[][][] output(not implemented yet)", model_label, key));
 						}
 					  else if(s == 2){
 							float[][] _output = (float[][]) outputs.get(key);
-							IJ.log(String.format("%s (%s), float[][] output(not implemented yet)", model_label, key));
+							IJ.showStatus(String.format("%s (%s), float[][] output(not implemented yet)", model_label, key));
 						}
 						else if(s == 1){
 							float[] _output = (float[]) outputs.get(key);
-							IJ.log(String.format("%s (%s), float[] output(not implemented yet)", model_label, key));
+							IJ.showStatus(String.format("%s (%s), float[] output(not implemented yet)", model_label, key));
 						}
 						else if(s == 0){
 							float _output = (float) outputs.get(key);
-							IJ.log(String.format("%s (%s), float output(%f)", model_label, key, _output));
+							IJ.showStatus(String.format("%s (%s), float output(%f)", model_label, key, _output));
 						}
 						else{
-							IJ.log("invalid shape");
+							IJ.showStatus("invalid shape");
 							return false;
 						}
 				}
@@ -514,7 +518,7 @@ public class AnetPlugin implements PlugIn {
 										}
 									}
 									else{
-										IJ.log("no image selected for "+ (String)chs.get(c));
+										IJ.showStatus("no image selected for "+ (String)chs.get(c));
 									}
 							   }
 							 }
@@ -584,7 +588,7 @@ public class AnetPlugin implements PlugIn {
 						else if(s == 1) outputs.put(key, new float[shape[0]]);
 						else if(s == 0) outputs.put(key, 0.0f);
 						else{
-							IJ.log("unsupported shape.");
+							IJ.showStatus("unsupported shape.");
 							return false;
 						};
 				}
@@ -599,11 +603,11 @@ public class AnetPlugin implements PlugIn {
 	}
 
 	public void process() {
-		IJ.log("processing with A-net...");
+		IJ.showStatus("processing with A-net...");
 		ap.predict(inputs, outputs);
-		IJ.log("A-net finished, showing result...");
+		IJ.showStatus("A-net finished, showing result...");
 		parseConfig("show_outputs", inputs, outputs, null);
-		IJ.log("Done.");
+		IJ.showStatus("Done.");
 	}
 
 	public void showAbout() {
@@ -652,17 +656,17 @@ public class AnetPlugin implements PlugIn {
 	}
 
 	private void onConnectCallback(Session session) {
-        IJ.log("Session connected, ID=" + session.getID());
+        IJ.showStatus("Session connected, ID=" + session.getID());
     }
 
     private void onJoinCallback(Session session, SessionDetails details) {
-				IJ.log("Joined, ID=" + session.getID());
+				IJ.showStatus("Joined, ID=" + session.getID());
 				CompletableFuture<CallResult> fList = session.call("org.imod.public.models.list", "*");
 				fList.whenComplete((callResultList, throwableList) -> {
 					if (throwableList == null) {
 						String modelstr = (String) callResultList.results.get(0);
-						IJ.log("models: " + modelstr);
-						IJ.log(modelstr);
+						IJ.showStatus("models: " + modelstr);
+						IJ.showStatus(modelstr);
 						List<String> model_names = Arrays.asList(modelstr.split(","));
 						showDownloadDialog(model_names);
 				  }
@@ -677,19 +681,47 @@ public class AnetPlugin implements PlugIn {
     }
 
     private void onLeaveCallback(Session session, CloseDetails detail) {
-        IJ.log(String.format("Left reason=%s, message=%s", detail.reason, detail.message));
+        IJ.showStatus(String.format("Left reason=%s, message=%s", detail.reason, detail.message));
     }
 
     private void onDisconnectCallback(Session session, boolean wasClean) {
-        IJ.log(String.format("Session with ID=%s, disconnected.", session.getID()));
+        IJ.showStatus(String.format("Session with ID=%s, disconnected.", session.getID()));
     }
 
-		public static void saveFile (String url, String file) throws IOException{
+		public static void saveFile2 (String url, String file) throws IOException{
 			URL website = new URL(url);
 			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
 			FileOutputStream fos = new FileOutputStream(file);
 			fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-	}
+	  }
 
+		public void saveFile (String url, String file) throws IOException{
+				HTTPDownloadUtil util = new HTTPDownloadUtil();
+				util.downloadFile(url);
+				IJ.showStatus(String.format("downloading file %s, size:%d", util.getFileName(), util.getContentLength()));
+				InputStream inputStream = util.getInputStream();
+	      // opens an output stream to save into file
+	      FileOutputStream outputStream = new FileOutputStream(file);
+
+	      byte[] buffer = new byte[BUFFER_SIZE];
+	      int bytesRead = -1;
+	      long totalBytesRead = 0;
+	      double percentCompleted = 0.0;
+	      long fileSize = util.getContentLength();
+	      while ((bytesRead = inputStream.read(buffer)) != -1 && !cancel_flag) {
+	          outputStream.write(buffer, 0, bytesRead);
+	          totalBytesRead += bytesRead;
+	          percentCompleted = totalBytesRead * 1.0 / fileSize;
+						IJ.showProgress(percentCompleted);
+						IJ.showStatus(String.format("downloading %d bytes/%d bytes", totalBytesRead, fileSize));
+	      }
+				IJ.showStatus("A-net model downloaded.");
+	      outputStream.close();
+	      util.disconnect();
+				if(cancel_flag){
+					File f = new File(file);
+        	f.delete();
+				}
+	  }
 
 }
