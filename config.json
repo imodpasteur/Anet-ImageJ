@@ -1,0 +1,54 @@
+{
+  "model_name": "ANNA-PALM_npc_tubulin_946b",
+  "label":"ANNA-PALM(v1)",
+  "url":"https://s3.eu-west-2.amazonaws.com/anna-palm-model/anet_npc_tubulin_946b_tensorflow_model.pb",
+  "inputs": [{
+      "name": "input",
+      "key": "input",
+      "type": "image",
+      "channels": ["SR", "LR"],
+      "size": 512,
+      "shape": [1, 512, 512, 2],
+      "default": 0.0,
+      "required": true
+    },
+    {
+      "name": "mode",
+      "key": "control",
+      "type": "choice",
+      "options": {
+        "tubulin": 0.0,
+        "nuclear_pore": 1.0,
+        "actin": 2.0
+      },
+      "shape": [1, 1, 1, 1],
+      "default": 0.0,
+      "required": true
+    },
+    {
+      "name": "channel mask",
+      "key": "channel_mask",
+      "type": "check_list",
+      "length": 2,
+      "shape": [1, 1, 1, 2],
+      "default": 1.0,
+      "required": false
+    },
+    {
+      "name": "dropout probability",
+      "key": "dropout_prob",
+      "type": "float",
+      "shape": [],
+      "default": 0.0,
+      "required": false
+    }
+  ],
+  "outputs": [{
+    "name": "output",
+    "key": "output",
+    "type": "image",
+    "channels": ["SR"],
+    "size": 512,
+    "shape": [1, 512, 512, 1]
+  }]
+}
