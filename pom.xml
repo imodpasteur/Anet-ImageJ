@@ -30,7 +30,7 @@
 
 	<groupId>org.imod</groupId>
 	<artifactId>ANNA_PALM_Process</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 
 	<name>ANNA-PALM Process</name>
 	<description>ANNA-PALM imagej client.</description>

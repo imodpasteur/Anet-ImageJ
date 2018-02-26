@@ -213,85 +213,7 @@ public class AnetPlugin implements PlugIn {
 			return false;
 	}
 
-	private boolean showDialog2() {
-		GenericDialog gd = new GenericDialog("A-Net Process");
 
-		List<String> modelList = new ArrayList<String>();
-		File folder = new File("models");
-		File[] listOfFiles = folder.listFiles();
-    for (int i = 0; i < listOfFiles.length; i++) {
-      if (listOfFiles[i].isFile()) {
-
-      } else if (listOfFiles[i].isDirectory()) {
-				IJ.showStatus(listOfFiles[i].getName());
-				modelList.add(listOfFiles[i].getName());
-      }
-    }
-		if(modelList.size()<=0){
-			modelList.add("no model available.");
-		}
-		String[] items = (String[]) modelList.toArray(new String[modelList.size()]);
-		gd.addRadioButtonGroup("models", items, items.length, 1, items[0]);
-
-		String[] structure_types = {"tubulin", "nuclear_pore", "actin", "mitochondria","unknown"};
-		// gd.addStringField("mode", "tubulin");
-		gd.addChoice("mode:", structure_types, "tubulin");
-
-		// default value is 0.00, 2 digits right of the decimal point
-		gd.addNumericField("input_size", 512, 0);
-
-		// Create custom button
-		Button bt = new Button("download model");
-		bt.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e)
-				{
-						session = connect("wss://dai.pasteur.fr/ws", "realm1");
-				}
-		});
-		// Add and show button
-		gd.add(bt);
-
-		gd.showDialog();
-		if (gd.wasCanceled())
-			return false;
-
-		if (modelList.size()<=0){
-			// check if there is any new file
-			for (int i = 0; i < listOfFiles.length; i++) {
-	      if (listOfFiles[i].isFile()) {
-	      } else if (listOfFiles[i].isDirectory()) {
-					modelList.add(listOfFiles[i].getName());
-	      }
-	    }
-			if(modelList.size()>0){
-				IJ.showMessage("A-Net",
-					"Please try again."
-				);
-			}
-			return false;
-		}
-		// get entered values
-		model_name = gd.getNextRadioButton();
-		mode = gd.getNextChoice();//gd.getNextString();
-		input_size = (int) gd.getNextNumber();
-		IJ.showStatus("using model " + model_name);
-		IJ.showStatus("using mode " + mode);
-		model_path = Paths.get(IJ.getDirectory("imagej"), "models/" + model_name).toString();
-		File f = new File(model_path+"/tensorflow_model.pb");
-		if(f.exists() && !f.isDirectory()) {
-				IJ.showStatus(model_path);
-				// modelPath = "/Users/weiouyang/workspace/tensorflow-java/A-NET-npc-tubulin-946b/";
-				ap.loadModel(model_path);
-				return true; //
-		}
-		else{
-			IJ.showMessage("A-Net",
-				"invalid model file."
-			);
-			return false;
-		}
-
-	}
 
 	private boolean showDownloadDialog(List<String> models) {
 		GenericDialog gd = new GenericDialog("A-net model download");
@@ -491,11 +413,10 @@ public class AnetPlugin implements PlugIn {
 										ImagePlus image = image_window_map.get(input_image_str);
 										int width = image.getWidth();
 										int height = image.getHeight();
-										if(height!=512 || width!=512){
-											IJ.showMessage("image size must be 512x512.");
+										if(height!=shape[1] || width!=shape[2]){
+											IJ.showMessage("image size must be "+shape[1]+"x"+shape[2]+".");
 											return false;
 										}
-										assert width == 512 && height == 512 ;
 										int type = image.getType();
 										float[] pixels = null;
 										if (type == ImagePlus.GRAY8)
