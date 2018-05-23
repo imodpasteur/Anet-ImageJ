@@ -29,12 +29,12 @@
 	</parent>
 
 	<groupId>org.imod</groupId>
-	<artifactId>ANNA_PALM_Process</artifactId>
+	<artifactId>Anet_ImageJ</artifactId>
 	<version>0.2.2-SNAPSHOT</version>
 
-	<name>ANNA-PALM Process</name>
-	<description>ANNA-PALM imagej client.</description>
-	<url>https://github.com/impdpasteur/ANNA-PALM</url>
+	<name>Anet ImageJ</name>
+	<description>Anet plugin for ImageJ.</description>
+	<url>https://github.com/impdpasteur/Anet-ImageJ</url>
 	<inceptionYear>2012</inceptionYear>
 	<organization>
 		<name>Imod Pasteur</name>
@@ -74,14 +74,14 @@
     </mailingList>
   </mailingLists>
 	<scm>
-		<connection>scm:git:git://github.com/impdpasteur/ANNA-PALM</connection>
-		<developerConnection>scm:git:git@github.com:impdpasteur/ANNA-PALM</developerConnection>
+		<connection>scm:git:git://github.com/impdpasteur/Anet-ImageJ</connection>
+		<developerConnection>scm:git:git@github.com:impdpasteur/Anet-ImageJ</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/impdpasteur/ANNA-PALM</url>
+		<url>https://github.com/impdpasteur/Anet-ImageJ</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/impdpasteur/ANNA-PALM</url>
+		<url>https://github.com/impdpasteur/Anet-ImageJ</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>

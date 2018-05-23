@@ -560,7 +560,7 @@ public class AnetPlugin implements PlugIn {
 			IJ.showMessage("A-Net",
 				"Please notice that downloading models may take a while, the model list will be updated when it finished."
 			);
-			String model_url = "https://www.dropbox.com/s/opu0rrpxzf43z07/internel_models_v0.1.zip?dl=1";
+			String model_url = "https://github.com/imodpasteur/Anet-ImageJ/releases/download/0.2.2/models_v0.1.zip";
 			IJ.showStatus("dowloading model from: " + model_url);
 			String fileRoot = Paths.get(IJ.getDirectory("imagej"), "anet-models").toString();
 			try {
