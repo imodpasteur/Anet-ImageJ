@@ -22,6 +22,8 @@ import org.imod.anet.AnetPredict;
 import java.awt.Button;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.Panel;
+import java.awt.FlowLayout;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -100,12 +102,11 @@ public class AnetPlugin implements PlugIn {
 		if(arg.equals("setup")){
 			showMainDialog(false);
 		}
-		else if(arg.equals("download")){
-			session = connect("wss://dai.pasteur.fr/ws", "realm1");
-		}
 		else if(arg == null || arg.equals("run")){
 			String _model = Prefs.get("ANET.default_model", "none");
-			if(_model.equals("none")){
+			File folder = new File("anet-models");
+			File[] listOfFiles = folder.listFiles();
+			if(_model.equals("none") || listOfFiles == null || listOfFiles.length == 0){
 				showMainDialog(true);
 			}
 			else{
@@ -116,22 +117,27 @@ public class AnetPlugin implements PlugIn {
 			showModelDialog(arg);
 		}
 	}
+	private void closeDialog(GenericDialog gd){
+		gd.windowClosing(null);
+	}
 
 	private boolean showMainDialog(boolean start) {
 		GenericDialog gd = new GenericDialog("A-Net Process");
 		// Create download button
-		Button btDownload = new Button("download model");
+		Button btDownload = new Button("Download models");
 		btDownload.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e)
 				{
-						session = connect("wss://dai.pasteur.fr/ws", "realm1");
+						downloadModels();
+						closeDialog(gd);
+						showMainDialog(false);
 				}
 		});
 		// Add and show button
 		gd.add(btDownload);
 
 		List<String> modelList = new ArrayList<String>();
-		File folder = new File("models");
+		File folder = new File("anet-models");
 		File[] listOfFiles = folder.listFiles();
 		if(listOfFiles == null || listOfFiles.length == 0){
 			modelList.add("no model available.");
@@ -147,7 +153,26 @@ public class AnetPlugin implements PlugIn {
 		}
 
 		String[] items = (String[]) modelList.toArray(new String[modelList.size()]);
-		gd.addRadioButtonGroup("models", items, items.length, 1, items[0]);
+
+		gd.addRadioButtonGroup("Available models", items, items.length, 1, items[0]);
+		gd.addMessage("Please place the model files into the 'anet-models' folder (next to the 'plugin' folder in FIJI/ImageJ).");
+		if(listOfFiles != null && listOfFiles.length > 0 ){
+			// Create select button
+			Button btRun = new Button("Run");
+			btRun.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e)
+					{
+					  	closeDialog(gd);
+							String model_name = gd.getNextRadioButton();
+							showModelDialog(model_name);
+					}
+			});
+			// Add and show button
+			Panel panel = new Panel();
+			panel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			panel.add(btRun);
+			gd.add(panel);
+		}
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return false;
@@ -157,14 +182,22 @@ public class AnetPlugin implements PlugIn {
 			Prefs.set("ANET.default_model", model_name);
 			IJ.showStatus("selected model:" + model_name);
 		}
+		else{
+			return false;
+		}
+
 		if(start)
 			return showModelDialog(model_name);
-		else
+		else{
+			IJ.showMessage("A-Net",
+				"Now you can use the selected model by click 'Run A-net' in the menu."
+			);
+		}
 		  return true;
 	}
 
 	private boolean showModelDialog(String model_name){
-		model_path = Paths.get(IJ.getDirectory("imagej"), "models/" + model_name).toString();
+		model_path = Paths.get(IJ.getDirectory("imagej"), "anet-models/" + model_name).toString();
 		File fm = new File(model_path+"/tensorflow_model.pb");
 		File fc = new File(model_path+"/config.json");
 		if(fm.exists() && !fm.isDirectory() && fc.exists() && !fc.isDirectory()) {
@@ -173,15 +206,16 @@ public class AnetPlugin implements PlugIn {
 		}
 		else{
 			IJ.showMessage("A-Net",
-				"invalid model file."
+				"invalid model file. Please use a valid model(see https://annapalm.pasteur.fr for more details). "
 			);
+			showMainDialog(true);
 		}
 
 		GenericDialog gd = new GenericDialog(String.format("A-Net (%s)", model_name));
 		// gd.hideCancelButton();
 		inputs = new HashMap<String, Object>();
 		outputs = new HashMap<String, Object>();
-		model_path = Paths.get(IJ.getDirectory("imagej"), "models/" + model_name).toString();
+		model_path = Paths.get(IJ.getDirectory("imagej"), "anet-models/" + model_name).toString();
 		// build image window map
 		int[] list = WindowManager.getIDList();
 		if(list != null){
@@ -200,6 +234,22 @@ public class AnetPlugin implements PlugIn {
 		image_window_titles[image_window_titles.length-1] = "";
 
 		if(parseConfig("build_gui", inputs, outputs, gd)){
+			// Create select button
+			Button btSelect = new Button("select another model");
+			btSelect.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e)
+					{
+
+							closeDialog(gd);
+							showMainDialog(false);
+					}
+			});
+			Panel panel = new Panel();
+			panel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+			panel.add(btSelect);
+			// Add and show button
+			gd.add(panel);
+
 			gd.showDialog();
 			if (gd.wasCanceled())
 				return false;
@@ -211,73 +261,6 @@ public class AnetPlugin implements PlugIn {
 		}
 		else
 			return false;
-	}
-
-
-
-	private boolean showDownloadDialog(List<String> models) {
-		GenericDialog gd = new GenericDialog("A-net model download");
-		cancel_flag = false;
-
-		for (String model_name : models) {
-			 gd.addCheckbox(model_name, false);
-		}
-		gd.showDialog();
-		if (gd.wasCanceled()){
-			cancel_flag = true;
-			return false;
-		}
-
-		String selected_models_str = "";
-		for (String model_name : models) {
-			 if(gd.getNextBoolean())
-			 selected_models_str = model_name + "," + selected_models_str;
-		}
-		List<String> selected_model_names = Arrays.asList(selected_models_str.split(","));
-		for(String model_name: selected_model_names){
-			IJ.showStatus("download " + model_name);
-			// here we CALL every second
-			CompletableFuture<CallResult> fGet = session.call("org.imod.public.models.get_download_url", model_name);
-			fGet.whenComplete((callResultGet, throwableGet) -> {
-					if (throwableGet == null && !cancel_flag) {
-							IJ.showStatus(String.format("model url: %s, ", callResultGet.results.get(0)));
-							Map model_dict = (Map) callResultGet.results.get(0);
-							String model_url = (String) model_dict.get("url");
-
-
-							IJ.showStatus("dowloading model from: " + model_url);
-							String fileRoot = Paths.get(IJ.getDirectory("imagej"), "models", model_name).toString();
-							try {
-									// returns pathnames for files and directory
-									File folder = new File(fileRoot);
-									// create
-									folder.mkdirs();
-
-							 } catch(Exception e3) {
-									// if any error occurs
-									e3.printStackTrace();
-							 }
-							try {
-								  String model_path_str = Paths.get(fileRoot, "tensorflow_model.pb").toString();
-									// save config.json
-									JSONObject obj = new JSONObject();
-		    					obj.putAll(model_dict);
-									try (FileWriter file = new FileWriter(Paths.get(fileRoot, "config.json").toString())) {
-										file.write(obj.toJSONString());
-									}
-									// save model file
-									saveFile(model_url, model_path_str);
-									IJ.showStatus("model and config has been saved to " + fileRoot);
-							}
-							catch (IOException e2) {
-								 e2.printStackTrace();
-							}
-					} else {
-							IJ.showStatus(String.format("ERROR - call failed: %s", throwableGet.getMessage()));
-					}
-			});
-		}
-		return true;
 	}
 
 	public boolean parseConfig(String stage, Map<String, Object> inputs, Map<String, Object> outputs, GenericDialog gd) {
@@ -537,6 +520,75 @@ public class AnetPlugin implements PlugIn {
 		);
 	}
 
+	public void saveFiles(String url, String file, boolean extract) throws IOException{
+			HTTPDownloadUtil util = new HTTPDownloadUtil();
+			util.downloadFile(url);
+			IJ.showStatus(String.format("downloading file %s, size:%d", util.getFileName(), util.getContentLength()));
+			InputStream inputStream = util.getInputStream();
+      // opens an output stream to save into file
+      FileOutputStream outputStream = new FileOutputStream(file);
+
+      byte[] buffer = new byte[BUFFER_SIZE];
+      int bytesRead = -1;
+      long totalBytesRead = 0;
+      double percentCompleted = 0.0;
+      long fileSize = util.getContentLength();
+      while ((bytesRead = inputStream.read(buffer)) != -1 && !cancel_flag) {
+          outputStream.write(buffer, 0, bytesRead);
+          totalBytesRead += bytesRead;
+          percentCompleted = totalBytesRead * 1.0 / fileSize;
+					IJ.showProgress(percentCompleted);
+					IJ.showStatus(String.format("downloading %d bytes/%d bytes", totalBytesRead, fileSize));
+      }
+			IJ.showStatus("A-net model downloaded.");
+      outputStream.close();
+      util.disconnect();
+			if(cancel_flag){
+				File f = new File(file);
+      	f.delete();
+			}
+			if(extract){
+				util.extractFolder(file, "./anet-models");
+				File tmp_file = new File(file);
+				tmp_file.delete();
+			}
+  }
+
+	public void downloadModels() {
+		  String model_name = "tubulin_model_demo";
+			IJ.showStatus("download " + model_name);
+			IJ.showMessage("A-Net",
+				"Please notice that downloading models may take a while, the model list will be updated when it finished."
+			);
+			String model_url = "https://www.dropbox.com/s/opu0rrpxzf43z07/internel_models_v0.1.zip?dl=1";
+			IJ.showStatus("dowloading model from: " + model_url);
+			String fileRoot = Paths.get(IJ.getDirectory("imagej"), "anet-models").toString();
+			try {
+					// returns pathnames for files and directory
+					File folder = new File(fileRoot);
+					// create
+					folder.mkdirs();
+			 } catch(Exception e3) {
+					// if any error occurs
+					e3.printStackTrace();
+			 }
+			try {
+				  String model_path_str = Paths.get(fileRoot, "__tmp__.zip").toString();
+					// save model file
+					saveFiles(model_url, model_path_str, true);
+					IJ.showStatus("model and config has been saved to " + fileRoot);
+					IJ.showMessage("A-Net",
+						"Models has been saved to 'anet-models' folder in ImageJ. Please run 'Setup A-net' again."
+					);
+			}
+			catch (IOException e2) {
+				 e2.printStackTrace();
+			}
+
+
+
+		}
+
 	/**
 	 * Main method for debugging.
 	 *
@@ -562,87 +614,5 @@ public class AnetPlugin implements PlugIn {
 		// run the plugin
 		IJ.runPlugIn(clazz.getName(), "");
 	}
-
-	public Session connect(String websocketURL, String realm) {
-			Session session = new Session();
-			session.addOnConnectListener(this::onConnectCallback);
-			session.addOnJoinListener(this::onJoinCallback);
-			session.addOnLeaveListener(this::onLeaveCallback);
-			session.addOnDisconnectListener(this::onDisconnectCallback);
-
-			// finally, provide everything to a Client instance and connect
-			Client client = new Client(session, websocketURL, realm);
-			client.connect();
-			return session;
-	}
-
-	private void onConnectCallback(Session session) {
-        IJ.showStatus("Session connected, ID=" + session.getID());
-    }
-
-    private void onJoinCallback(Session session, SessionDetails details) {
-				IJ.showStatus("Joined, ID=" + session.getID());
-				CompletableFuture<CallResult> fList = session.call("org.imod.public.models.list", "*");
-				fList.whenComplete((callResultList, throwableList) -> {
-					if (throwableList == null) {
-						String modelstr = (String) callResultList.results.get(0);
-						IJ.showStatus("models: " + modelstr);
-						IJ.showStatus(modelstr);
-						List<String> model_names = Arrays.asList(modelstr.split(","));
-						showDownloadDialog(model_names);
-				  }
-					else{
-						IJ.showMessage("A-Net error",
-							"can't get model list"
-						);
-					}
-				});
-
-
-    }
-
-    private void onLeaveCallback(Session session, CloseDetails detail) {
-        IJ.showStatus(String.format("Left reason=%s, message=%s", detail.reason, detail.message));
-    }
-
-    private void onDisconnectCallback(Session session, boolean wasClean) {
-        IJ.showStatus(String.format("Session with ID=%s, disconnected.", session.getID()));
-    }
-
-		public static void saveFile2 (String url, String file) throws IOException{
-			URL website = new URL(url);
-			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-			FileOutputStream fos = new FileOutputStream(file);
-			fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-	  }
-
-		public void saveFile (String url, String file) throws IOException{
-				HTTPDownloadUtil util = new HTTPDownloadUtil();
-				util.downloadFile(url);
-				IJ.showStatus(String.format("downloading file %s, size:%d", util.getFileName(), util.getContentLength()));
-				InputStream inputStream = util.getInputStream();
-	      // opens an output stream to save into file
-	      FileOutputStream outputStream = new FileOutputStream(file);
-
-	      byte[] buffer = new byte[BUFFER_SIZE];
-	      int bytesRead = -1;
-	      long totalBytesRead = 0;
-	      double percentCompleted = 0.0;
-	      long fileSize = util.getContentLength();
-	      while ((bytesRead = inputStream.read(buffer)) != -1 && !cancel_flag) {
-	          outputStream.write(buffer, 0, bytesRead);
-	          totalBytesRead += bytesRead;
-	          percentCompleted = totalBytesRead * 1.0 / fileSize;
-						IJ.showProgress(percentCompleted);
-						IJ.showStatus(String.format("downloading %d bytes/%d bytes", totalBytesRead, fileSize));
-	      }
-				IJ.showStatus("A-net model downloaded.");
-	      outputStream.close();
-	      util.disconnect();
-				if(cancel_flag){
-					File f = new File(file);
-        	f.delete();
-				}
-	  }
 
 }
