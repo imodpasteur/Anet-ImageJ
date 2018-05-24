@@ -18,7 +18,7 @@ For more details, please checkout the [ANNA-PALM project website](https://annapa
 * Click `Run A-net`, select input images, and then click `ok`
 * Wait for a while, you should be able to see the result in a pop image window.
 
-Sample images can be downloaded from here: [STORM image 1000 frames(for figure 4 in the paper)](./img/figure4c-PALM-1000frames-512crop.tif), [cropped version(512x512)](./img/figure4c-PALM-1000frames.tif), more sample images can be exported from [https://annapalm.pasteur.fr](https://annapalm.pasteur.fr/#/repository).
+Sample images can be downloaded from here: [STORM image 1000 frames (used as figure 4 in the paper), cropped to 512x512](./img/figure4c-PALM-1000frames-512crop.tif), [full size version (2560x2560)](./img/figure4c-PALM-1000frames.tif), more sample images can be exported from [https://annapalm.pasteur.fr](https://annapalm.pasteur.fr/#/repository).
 
 ## Use your own model
 A set of pre-trained models is provided, a shortcut to download these models is to use the `download` button in the plugin. You can check directly in a folder named `anet-models` in your ImageJ folder (next to the `plugin` folder). You can also download it manually from [here](https://github.com/imodpasteur/Anet-ImageJ/releases/download/0.2.2/models_v0.1.zip).
