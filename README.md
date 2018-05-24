@@ -11,7 +11,7 @@ For more details, please checkout the [ANNA-PALM project website](https://annapa
 * You will find an `A-net` entry in `Plugins` of ImageJ menu.
 
 ## Usage
-![plugin demo gif](./usage.gif)
+![plugin demo gif](./img/usage.gif)
 * Click `Setup A-net` in the ImageJ `Plugins` menu, click the download button and wait until you see a list of models.
 * select a model and click `ok`.
 * Open your image, notice that your image size must match the model input, different model can have different input image size. By default, built-in models has the input size of 512x512. If your input image is bigger or smaller than that, you will need to crop or pad with zeros manually in ImageJ.
@@ -21,7 +21,7 @@ For more details, please checkout the [ANNA-PALM project website](https://annapa
 ## Use your own model
 A set of pre-trained models is provided, a shortcut to download these models is to use the `download` button in the plugin. You can check directly in a folder named `anet-models` in your ImageJ folder (next to the `plugin` folder). You can also download it manually from [here](https://github.com/imodpasteur/Anet-ImageJ/releases/download/0.2.2/models_v0.1.zip).
 
-![model folder structure](./model-folder-structure.png)
+![model folder structure](./img/model-folder-structure.png)
 
 Model files for the plugin consist of two files: a `tensorflow_model.pb` file for the frozen model, and a `config.json` file for the configuration which describe the GUI, input and output of the model.
 
