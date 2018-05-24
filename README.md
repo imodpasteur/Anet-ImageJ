@@ -11,6 +11,7 @@ For more details, please checkout the [ANNA-PALM project website](https://annapa
 * You will find an `A-net` entry in `Plugins` of ImageJ menu.
 
 ## Usage
+![plugin demo gif](./Anet-ImageJ-plugin-demo.gif)
 * Click `Setup A-net` in the ImageJ `Plugins` menu, click the download button and wait until you see a list of models.
 * select a model and click `ok`.
 * Open your image, notice that your image size must match the model input, different model can have different input image size. By default, built-in models has the input size of 512x512. If your input image is bigger or smaller than that, you will need to crop or pad with zeros manually in ImageJ.
