@@ -6,13 +6,13 @@ For more details, please checkout the [ANNA-PALM project website](https://annapa
 
 ## Installation
 
-* Download the latest Anet-ImageJ plugin from the [releases](https://github.com/imodpasteur/Anet-ImageJ/releases).
-* Copy the .jar file into your ImageJ/FIJI's plugin folder, or directly drag the .jar file into ImageJ (then restart ImageJ).
+* Download the Anet-ImageJ plugin: [Anet-ImageJ v0.2.2](https://github.com/imodpasteur/Anet-ImageJ/releases/tag/0.2.2).
+* Copy the .jar file into your ImageJ plugin folder (note: Fiji might not work anymore), or directly drag the .jar file into ImageJ (then restart ImageJ).
 * You will find an `A-net` entry in `Plugins` of ImageJ menu.
 
 ## Usage
 ![plugin demo gif](./img/usage.gif)
-* Click `Setup A-net` in the ImageJ `Plugins` menu, click the download button and wait until you see a list of models.
+* For the first time, click `Setup A-net` in the ImageJ `Plugins` menu ("Plugins => A-Net => Setup"), in the dialog, click the download button and wait until you see a list of models.
 * select a model and click `ok`.
 * Open your image, notice that your image size must match the model input, different model can have different input image size. By default, built-in models has the input size of 512x512. If your input image is bigger or smaller than that, you will need to crop or pad with zeros manually in ImageJ.
 * Click `Run A-net`, select input images, and then click `ok`
